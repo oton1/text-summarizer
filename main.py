@@ -11,7 +11,7 @@ from deep_translator import GoogleTranslator
 def summarize(text, n):
     # tokenize the text into sentences and words
     sentences = sent_tokenize(text)
-    tokenizer = RegexpTokenizer(r'\w+|[^\w\s]+')
+    tokenizer = RegexpTokenizer(r'\w+|[^ç\w\s]+')
     words = word_tokenize(text.lower())
     
     # remove stopwords
@@ -35,7 +35,7 @@ def summarize(text, n):
 
 
 # read input text from file
-with open('text.txt') as f:
+with open('trans.txt') as f:
     text = f.read()
 
 # translate to Portuguese if necessary
