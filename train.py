@@ -4,12 +4,13 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from transformers import BertTokenizer, BertModel
+import torch.cuda
 
 train_dataset_path = 'train.txt'
 val_dataset_path = 'val.txt'
 input_size = 512
 hidden_size = 768
-output_size = 128
+output_size = 12
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 loss_fn = nn.MSELoss()
 
@@ -25,7 +26,7 @@ class TextSummarizationDataset(Dataset):
         targets = []
         for i, line in enumerate(lines):
             try:
-                input_text, target_text = line.strip().split('\t')
+                input_text, target_text = line.strip().split('_')
                 inputs.append(input_text)
                 targets.append(target_text)
             except ValueError:
@@ -36,7 +37,16 @@ class TextSummarizationDataset(Dataset):
         return len(self.inputs)
     
     def __getitem__(self, idx):
-        return self.inputs[idx], self.targets[idx]
+        input_text = self.inputs[idx]
+        target_text = self.targets[idx]
+        input_tokens = self.tokenizer.encode(input_text, add_special_tokens=True, max_length=512, truncation=True)
+        target_tokens = self.tokenizer.encode(target_text, add_special_tokens=True, max_length=128, truncation=True)
+        input_tensor = torch.tensor(input_tokens)
+        target_tensor = torch.tensor(target_tokens)
+        input_shape = input_tensor.shape
+        target_shape = target_tensor.shape
+        print(f"input shape:{input_shape}, target shape: {target_shape}")
+        return input_tensor, target_tensor
 
 class TextSummarizationModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -82,7 +92,7 @@ def evaluate(model, val_loader, loss_fn, device):
             val_loss += loss.item()
     return val_loss / len(val_loader)
 
-train_loader, val_loader = get_data_loaders(train_dataset_path, val_dataset_path, batch_size=32)
+train_loader, val_loader = get_data_loaders(train_dataset_path, val_dataset_path, batch_size=12)
 model = TextSummarizationModel(input_size, hidden_size, output_size).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 
